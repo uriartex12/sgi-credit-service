@@ -151,10 +151,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}/withdrawal:
+  /v1/credit/{creditId}/payment:
     post:
-      summary: Make a withdraw from an credit
-      operationId: withdrawFromCredit
+      summary: Make a payment from an credit
+      operationId: makePayment
       parameters:
         - name: creditId
           in: path
@@ -167,10 +167,46 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TransactionRequest'
+              $ref: '#/components/schemas/paymentRequest'
       responses:
         '200':
           description: Withdrawal made
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          description: Credit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/credit/{creditId}/charge:
+    post:
+      summary: Make a payment from an credit
+      operationId: chargeCreditCard
+      parameters:
+        - name: creditId
+          in: path
+          required: true
+          description: Id of credit
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/chargeRequest'
+      responses:
+        '200':
+          description: Charge made
           content:
             application/json:
               schema:
@@ -288,25 +324,16 @@ components:
           type: number
         clientId:
           type: string
-        transactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Transaction'
-    Transaction:
+    paymentRequest:
       type: object
       properties:
-        clientId:
-          type: string
-        type:
-          type: string
-          enum: [deposit, withdrawal]
         amount:
-          type: number
-        date:
-          type: string
-          format: date
-        description:
-          type: string
+          type: decimal
+    chargeRequest:
+      type: object
+      properties:
+        amount:
+          type: decimal
     TransactionRequest:
       type: object
       required:
@@ -318,12 +345,10 @@ components:
           type: string
         type:
           type: string
-          enum: [ deposit,withdrawal ]
+          enum: [ PAYMENT,CHARGE ]
         amount:
           type: number
           format: double
-        description:
-          type: string
         clientId:
           type: string
         balance:
@@ -339,7 +364,7 @@ components:
           type: string
         type:
           type: string
-          enum: [ deposit,withdrawal ]
+          enum: [ PAYMENT,CHARGE ]
         amount:
           type: number
         clientId:

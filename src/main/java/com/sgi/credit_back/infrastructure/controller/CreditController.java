@@ -17,6 +17,7 @@ public class CreditController implements V1Api {
 
     private final CreditService creditService;
 
+
     @Override
     public Mono<ResponseEntity<CreditResponse>> createCredit(Mono<CreditRequest> creditRequest, ServerWebExchange exchange) {
         return creditService.createCredit(creditRequest);
@@ -47,13 +48,22 @@ public class CreditController implements V1Api {
         return creditService.getCreditById(creditId);
     }
 
+
+
     @Override
     public Mono<ResponseEntity<CreditResponse>> updateCredit(String creditId, Mono<CreditRequest> creditRequest, ServerWebExchange exchange) {
         return creditService.updateCredit(creditId,creditRequest);
     }
 
+
     @Override
-    public Mono<ResponseEntity<TransactionResponse>> withdrawFromCredit(String creditId, Mono<TransactionRequest> transactionRequest, ServerWebExchange exchange) {
-        return creditService.withdrawFromCredit(creditId,transactionRequest);
+    public Mono<ResponseEntity<TransactionResponse>> makePayment(String creditId, Mono<PaymentRequest> paymentRequest, ServerWebExchange exchange) {
+        return creditService.makePayment(creditId,paymentRequest);
     }
+
+    @Override
+    public Mono<ResponseEntity<TransactionResponse>> chargeCreditCard(String creditId, Mono<ChargeRequest> chargeRequest, ServerWebExchange exchange) {
+        return creditService.chargeCreditCard(creditId,chargeRequest);
+    }
+
 }

@@ -10,7 +10,8 @@ public interface CreditRepository {
     Flux<CreditResponse> getAllCredits();
     Mono<CreditResponse> getCreditById(String id);
     Mono<CreditResponse> updateCredit(String id, Mono<CreditRequest> customer);
-    Mono<TransactionResponse> withdrawFromCredit(String idCredit, Mono<TransactionRequest> transactionRequest);
+    Mono<TransactionResponse> makePayment(String idCredit, Mono<PaymentRequest> paymentRequestMono);
     Mono<BalanceResponse> getClientBalances(String idCredit);
     Flux<TransactionResponse> getClientTransactions(String idCredit);
+    Mono<TransactionResponse> chargeCreditCard(String idCredit, Mono<ChargeRequest> chargeRequestMono);
 }

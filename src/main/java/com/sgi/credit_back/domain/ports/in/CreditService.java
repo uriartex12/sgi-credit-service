@@ -12,7 +12,8 @@ public interface CreditService {
     Mono<ResponseEntity<Flux<CreditResponse>>> getAllCredits();
     Mono<ResponseEntity<CreditResponse>> getCreditById(String id);
     Mono<ResponseEntity<CreditResponse>> updateCredit(String id, Mono<CreditRequest> credit);
-    Mono<ResponseEntity<TransactionResponse>> withdrawFromCredit(String idAccount, Mono<TransactionRequest> transactionRequest);
+    Mono<ResponseEntity<TransactionResponse>> makePayment(String idAccount, Mono<PaymentRequest> transactionRequest);
     Mono<ResponseEntity<BalanceResponse>> getClientBalances(String idAccount);
     Mono<ResponseEntity<Flux<TransactionResponse>>> getClientTransactions(String idAccount);
+    Mono<ResponseEntity<TransactionResponse>> chargeCreditCard(String idAccount, Mono<ChargeRequest> chargeRequestMono);
 }

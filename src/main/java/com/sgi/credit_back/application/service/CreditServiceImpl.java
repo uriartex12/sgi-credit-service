@@ -50,8 +50,8 @@ public class CreditServiceImpl implements CreditService {
     }
 
     @Override
-    public Mono<ResponseEntity<TransactionResponse>> withdrawFromCredit(String idAccount, Mono<TransactionRequest> transactionRequest) {
-        return creditRepository.withdrawFromCredit(idAccount, transactionRequest)
+    public Mono<ResponseEntity<TransactionResponse>> makePayment(String idAccount, Mono<PaymentRequest> paymentRequestMono) {
+        return creditRepository.makePayment(idAccount, paymentRequestMono)
                 .map(transactionResponse ->ResponseEntity.ok().body(transactionResponse))
                 .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
     }
@@ -72,5 +72,12 @@ public class CreditServiceImpl implements CreditService {
                     return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(Flux.empty()));
                 });
+    }
+
+    @Override
+    public Mono<ResponseEntity<TransactionResponse>> chargeCreditCard(String idAccount, Mono<ChargeRequest> chargeRequestMono) {
+        return creditRepository.chargeCreditCard(idAccount, chargeRequestMono)
+                .map(transactionResponse ->ResponseEntity.ok().body(transactionResponse))
+                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
     }
 }
