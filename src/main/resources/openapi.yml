@@ -8,7 +8,7 @@ servers:
     description: Local server
 
 paths:
-  /v1/credits:
+  /v1/credit:
     get:
       summary: Get all credits
       operationId: getAllCredits
@@ -55,7 +55,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credits/{creditId}:
+  /v1/credit/{creditId}:
     get:
       summary: Get an credit by ID
       operationId: getCreditById
@@ -291,10 +291,8 @@ components:
       properties:
         type:
           type: string
-          enum: [personal,business]
+          enum: [PERSONAL,BUSINESS]
         creditLimit:
-          type: number
-        amount:
           type: number
         interestRate:
           type: number
@@ -303,7 +301,6 @@ components:
       required:
         - type
         - clientId
-        - amount
         - interestRate
         - creditLimit
     CreditResponse:
@@ -315,15 +312,20 @@ components:
           type: string
         type:
           type: string
-          enum: [ personal,business ]
+          enum: [ PERSONAL,BUSINESS]
         creditLimit:
-          type: number
-        amount:
-          type: number
+          type: decimal
+        consumptionAmount:
+          type: decimal
+        balance:
+          type: decimal
         interestRate:
-          type: number
+          type: decimal
         clientId:
           type: string
+        createdDate:
+          type: string
+          format: date-time
     paymentRequest:
       type: object
       properties:

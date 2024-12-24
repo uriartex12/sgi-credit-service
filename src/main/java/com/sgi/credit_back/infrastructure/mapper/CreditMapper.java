@@ -10,6 +10,10 @@ import org.mapstruct.factory.Mappers;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Mapper
 public interface CreditMapper {
@@ -20,12 +24,33 @@ public interface CreditMapper {
     CreditResponse map(Credit credit);
 
     @Mapping(target = "id", ignore = true)
-    Credit map(CreditRequest creditRequest);
-
-    @Mapping(target = "balance", source = "amount")
+    default Credit map(CreditRequest creditRequest, String accountNumber) {
+        return Credit.builder()
+                .consumptionAmount(BigDecimal.ZERO)
+                .creditNumber(accountNumber)
+                .type(creditRequest.getType().getValue())
+                .interestRate(creditRequest.getInterestRate())
+                .creditLimit(creditRequest.getCreditLimit())
+                .balance(creditRequest.getCreditLimit())
+                .clientId(creditRequest.getClientId())
+                .createdDate(Instant.now())
+                .updatedDate(Instant.now())
+                .build();
+    }
+    default Credit mapUpdated(CreditRequest creditRequest,String creditId) {
+        return Credit.builder()
+                .id(creditId)
+                .interestRate(creditRequest.getInterestRate())
+                .type(creditRequest.getType().getValue())
+                .creditLimit(creditRequest.getCreditLimit())
+                .updatedDate(Instant.now()).build();
+    }
+    @Mapping(target = "balance", source = "balance")
     BalanceResponse balance (Credit credit);
 
-    default Mono<Credit> map(Mono<CreditRequest> creditRequestMono) {
-        return creditRequestMono.map(this::map);
+
+    default OffsetDateTime map(Instant instant) {
+        return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
+
 }

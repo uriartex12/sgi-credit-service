@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Random;
 
 @Slf4j
@@ -28,10 +27,7 @@ public class CreditRepositoryImpl implements CreditRepository {
     @Override
     public Mono<CreditResponse> createCredit(Mono<CreditRequest> credit) {
         return credit.flatMap(creditMono -> {
-            Credit creditBank = CreditMapper.INSTANCE.map(creditMono);
-            creditBank.setCreditNumber(generateAccountNumber());
-            creditBank.setCreationDate(LocalDateTime.now());
-            creditBank.setUpdatedDate(LocalDateTime.now());
+            Credit creditBank = CreditMapper.INSTANCE.map(creditMono,generateAccountNumber());
             return creditRepository.save(creditBank).map(CreditMapper.INSTANCE::map);
         });
     }
@@ -59,10 +55,7 @@ public class CreditRepositoryImpl implements CreditRepository {
                 .switchIfEmpty(Mono.error(new Exception("Bank Credit not found")))
                 .flatMap(accountRequest ->
                         customer.map(updatedAccount -> {
-                            Credit updateCredit = CreditMapper.INSTANCE.map(updatedAccount);
-                            updateCredit.setUpdatedDate(LocalDateTime.now());
-                            updateCredit.setId(accountRequest.getId());
-                            return updateCredit;
+                            return CreditMapper.INSTANCE.mapUpdated(updatedAccount,accountRequest.getId());
                         })
                 ).flatMap(creditRepository::save).map(CreditMapper.INSTANCE::map);
     }
@@ -83,16 +76,17 @@ public class CreditRepositoryImpl implements CreditRepository {
         return creditRepository.findById(idCredit)
                 .switchIfEmpty(Mono.defer(() -> Mono.error(new Exception("Credit product not found: " + idCredit))))
                 .flatMap(credit -> paymentRequestMono
-                        .filter(payment -> payment.getAmount().compareTo(credit.getAmount()) <= 0)
+                        .filter(payment -> payment.getAmount().compareTo(credit.getConsumptionAmount()) <= 0)
                         .switchIfEmpty(Mono.error(new Exception("Payment amount must be greater than zero")))
                         .flatMap(payment -> {
-                            BigDecimal updatedBalance = credit.getAmount().subtract(payment.getAmount());
+                            BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount().subtract(payment.getAmount());
                             transaction.setProductId(idCredit);
                             transaction.setClientId(credit.getClientId());
                             transaction.setType(TypeEnum.PAYMENT);
-                            transaction.setBalance(updatedBalance.doubleValue());
+                            transaction.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount).doubleValue());
                             transaction.setAmount(payment.getAmount().doubleValue());
-                            credit.setAmount(updatedBalance);
+                            credit.setConsumptionAmount(updatedConsumptionAmount);
+                            credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
                             return creditRepository.save(credit)
                                     .flatMap(savedAccount -> webClient.post("/v1/transaction",
                                             transaction,
@@ -110,13 +104,14 @@ public class CreditRepositoryImpl implements CreditRepository {
                         .filter(charge -> !isCreditLimitExceeded(credit, charge.getAmount()))
                         .switchIfEmpty(Mono.error(new Exception("Insufficient credit available")))
                         .flatMap(charge -> {
-                            BigDecimal updatedBalance = credit.getAmount().add(charge.getAmount());
+                            BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount().add(charge.getAmount());
                             transaction.setProductId(idCredit);
                             transaction.setClientId(credit.getClientId());
                             transaction.setType(TypeEnum.CHARGE);
-                            transaction.setBalance(updatedBalance.doubleValue());
+                            transaction.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount).doubleValue());
                             transaction.setAmount(charge.getAmount().doubleValue());
-                            credit.setAmount(updatedBalance);
+                            credit.setConsumptionAmount(updatedConsumptionAmount);
+                            credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
                             return creditRepository.save(credit)
                                     .flatMap(savedAccount -> webClient.post("/v1/transaction",
                                             transaction,
@@ -132,9 +127,8 @@ public class CreditRepositoryImpl implements CreditRepository {
     }
 
     private boolean isCreditLimitExceeded(Credit credit, BigDecimal requestedAmount) {
-        return requestedAmount.compareTo(credit.getCreditLimit().subtract(credit.getAmount())) > 0;
+        return requestedAmount.compareTo(credit.getCreditLimit().subtract(credit.getConsumptionAmount())) > 0;
     }
-
 
 
     private String generateAccountNumber() {
