@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Random;
 
 @Slf4j
@@ -55,7 +56,11 @@ public class CreditRepositoryImpl implements CreditRepository {
                 .switchIfEmpty(Mono.error(new Exception("Bank Credit not found")))
                 .flatMap(accountRequest ->
                         customer.map(updatedAccount -> {
-                            return CreditMapper.INSTANCE.mapUpdated(updatedAccount,accountRequest.getId());
+                            accountRequest.setCreditLimit(updatedAccount.getCreditLimit());
+                            accountRequest.setType(updatedAccount.getType().getValue());
+                            accountRequest.setInterestRate(updatedAccount.getInterestRate());
+                            accountRequest.setUpdatedDate(Instant.now());
+                            return accountRequest;
                         })
                 ).flatMap(creditRepository::save).map(CreditMapper.INSTANCE::map);
     }

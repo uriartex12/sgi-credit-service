@@ -37,14 +37,7 @@ public interface CreditMapper {
                 .updatedDate(Instant.now())
                 .build();
     }
-    default Credit mapUpdated(CreditRequest creditRequest,String creditId) {
-        return Credit.builder()
-                .id(creditId)
-                .interestRate(creditRequest.getInterestRate())
-                .type(creditRequest.getType().getValue())
-                .creditLimit(creditRequest.getCreditLimit())
-                .updatedDate(Instant.now()).build();
-    }
+
     @Mapping(target = "balance", source = "balance")
     BalanceResponse balance (Credit credit);
 
