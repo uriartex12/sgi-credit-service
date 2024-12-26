@@ -1,83 +1,136 @@
 package com.sgi.credit_back.application.service;
 import com.sgi.bank_account_back.infrastructure.dto.*;
+import com.sgi.credit_back.domain.model.Credit;
 import com.sgi.credit_back.domain.ports.in.CreditService;
 import com.sgi.credit_back.domain.ports.out.CreditRepository;
+import com.sgi.credit_back.domain.ports.out.FeignExternalService;
+import com.sgi.credit_back.domain.shared.CustomError;
+import com.sgi.credit_back.infrastructure.exception.CustomException;
+import com.sgi.credit_back.infrastructure.mapper.CreditMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.function.Predicate;
+import static com.sgi.credit_back.domain.shared.Constants.*;
 
 @Service
 @RequiredArgsConstructor
 public class CreditServiceImpl implements CreditService {
 
     private final CreditRepository creditRepository;
+    private final FeignExternalService webClient;
 
     @Override
-    public Mono<ResponseEntity<CreditResponse>> createCredit(Mono<CreditRequest> credit) {
-        return creditRepository.createCredit(credit)
-                .map(createdCredit ->ResponseEntity.ok().body(createdCredit))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Mono<CreditResponse> createCredit(Mono<CreditRequest> credit) {
+        return credit.flatMap(creditMono -> {
+            Credit creditBank = CreditMapper.INSTANCE.map(creditMono, generateAccountNumber());
+            return creditRepository.save(creditBank);
+        });
     }
 
     @Override
-    public Mono<ResponseEntity<Void>> deleteCredit(String id) {
-        return creditRepository.deleteCredit(id)
-                .map(deleteCredit-> ResponseEntity.ok().body(deleteCredit))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Mono<Void> deleteCredit(String id) {
+        return creditRepository.findById(id)
+                .flatMap(creditRepository::delete)
+                .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<CreditResponse>>> getAllCredits() {
-        return Mono.fromSupplier(() -> ResponseEntity.ok().body(creditRepository.getAllCredits()))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Flux<CreditResponse> getAllCredits() {
+        return creditRepository.findAll();
     }
 
     @Override
-    public Mono<ResponseEntity<CreditResponse>> getCreditById(String id) {
-        return  creditRepository.getCreditById(id)
-                .map(creditResponse ->ResponseEntity.ok().body(creditResponse))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Mono<CreditResponse> getCreditById(String id) {
+        return creditRepository.findById(id).map(CreditMapper.INSTANCE::map);
     }
 
     @Override
-    public Mono<ResponseEntity<CreditResponse>> updateCredit(String id, Mono<CreditRequest> credit) {
-        return  creditRepository.updateCredit(id,credit)
-                .map(creditResponse ->ResponseEntity.ok().body(creditResponse))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Mono<CreditResponse> updateCredit(String id, Mono<CreditRequest> customer) {
+        return creditRepository.findById(id)
+                .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)))
+                .flatMap(accountRequest ->
+                        customer.map(updatedAccount -> {
+                            accountRequest.setCreditLimit(updatedAccount.getCreditLimit());
+                            accountRequest.setType(updatedAccount.getType().getValue());
+                            accountRequest.setInterestRate(updatedAccount.getInterestRate());
+                            accountRequest.setUpdatedDate(Instant.now());
+                            return accountRequest;
+                        })
+                ).flatMap(creditRepository::save);
     }
 
     @Override
-    public Mono<ResponseEntity<TransactionResponse>> makePayment(String idAccount, Mono<PaymentRequest> paymentRequestMono) {
-        return creditRepository.makePayment(idAccount, paymentRequestMono)
-                .map(transactionResponse ->ResponseEntity.ok().body(transactionResponse))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Flux<TransactionResponse> getClientTransactions(String idCredit) {
+        return creditRepository.findById(idCredit)
+                .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)))
+                .flatMapMany(credit -> webClient.get("/v1/{productId}/transaction",
+                        idCredit,
+                        TransactionResponse.class));
     }
 
     @Override
-    public Mono<ResponseEntity<BalanceResponse>> getClientBalances(String idAccount) {
-        return creditRepository.getClientBalances(idAccount)
-                .map(balanceResponse ->ResponseEntity.ok().body(balanceResponse))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    @Transactional
+    public Mono<TransactionResponse> makePayment(String idCredit, Mono<PaymentRequest> paymentRequestMono) {
+        TransactionRequest transaction = new TransactionRequest();
+        return creditRepository.findById(idCredit)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND))))
+                .flatMap(credit -> paymentRequestMono
+                        .filter(payment -> payment.getAmount().compareTo(credit.getConsumptionAmount()) <= 0)
+                        .switchIfEmpty(Mono.error(new CustomException(CustomError.E_INVALID_INPUT)))
+                        .flatMap(payment -> {
+                            BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount().subtract(payment.getAmount());
+                            transaction.setProductId(idCredit);
+                            transaction.setClientId(credit.getClientId());
+                            transaction.setType(TransactionRequest.TypeEnum.PAYMENT);
+                            transaction.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount).doubleValue());
+                            transaction.setAmount(payment.getAmount().doubleValue());
+                            credit.setConsumptionAmount(updatedConsumptionAmount);
+                            credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
+                            return creditRepository.save(credit)
+                                    .flatMap(savedAccount -> webClient.post("/v1/transaction",
+                                            transaction,
+                                            TransactionResponse.class));
+                        }));
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<TransactionResponse>>> getClientTransactions(String idAccount) {
-        return creditRepository.getClientTransactions(idAccount)
-                .collectList()
-                .map(transactions -> ResponseEntity.ok().body(Flux.fromIterable(transactions)))
-                .onErrorResume(error -> {
-                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(Flux.empty()));
-                });
+    @Transactional
+    public Mono<TransactionResponse> chargeCreditCard(String idCredit, Mono<ChargeRequest> chargeRequestMono) {
+        TransactionRequest transaction = new TransactionRequest();
+        return creditRepository.findById(idCredit)
+                .switchIfEmpty(Mono.defer(() -> Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND))))
+                .flatMap(credit -> chargeRequestMono
+                        .filter(isNotCreditLimitExceeded(credit))
+                        .switchIfEmpty(Mono.error(new CustomException(CustomError.E_INSUFFICIENT_BALANCE)))
+                        .flatMap(charge -> {
+                            BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount().add(charge.getAmount());
+                            transaction.setProductId(idCredit);
+                            transaction.setClientId(credit.getClientId());
+                            transaction.setType(TransactionRequest.TypeEnum.CHARGE);
+                            transaction.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount).doubleValue());
+                            transaction.setAmount(charge.getAmount().doubleValue());
+                            credit.setConsumptionAmount(updatedConsumptionAmount);
+                            credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
+                            return creditRepository.save(credit)
+                                    .flatMap(savedAccount -> webClient.post("/v1/transaction",
+                                            transaction,
+                                            TransactionResponse.class));
+                        }));
+    }
+
+    private Predicate<ChargeRequest> isNotCreditLimitExceeded(Credit credit) {
+        return charge -> charge.getAmount().compareTo(credit.getCreditLimit().subtract(credit.getConsumptionAmount())) <= 0;
     }
 
     @Override
-    public Mono<ResponseEntity<TransactionResponse>> chargeCreditCard(String idAccount, Mono<ChargeRequest> chargeRequestMono) {
-        return creditRepository.chargeCreditCard(idAccount, chargeRequestMono)
-                .map(transactionResponse ->ResponseEntity.ok().body(transactionResponse))
-                .onErrorResume(error -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+    public Mono<BalanceResponse> getClientBalances(String idCredit) {
+        return creditRepository.findById(idCredit)
+                .map(CreditMapper.INSTANCE::balance);
     }
+
 }

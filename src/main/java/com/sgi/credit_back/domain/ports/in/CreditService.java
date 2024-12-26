@@ -7,13 +7,13 @@ import reactor.core.publisher.Mono;
 
 
 public interface CreditService {
-    Mono<ResponseEntity<CreditResponse>> createCredit(Mono<CreditRequest> credit);
-    Mono<ResponseEntity<Void>> deleteCredit(String id);
-    Mono<ResponseEntity<Flux<CreditResponse>>> getAllCredits();
-    Mono<ResponseEntity<CreditResponse>> getCreditById(String id);
-    Mono<ResponseEntity<CreditResponse>> updateCredit(String id, Mono<CreditRequest> credit);
-    Mono<ResponseEntity<TransactionResponse>> makePayment(String idAccount, Mono<PaymentRequest> transactionRequest);
-    Mono<ResponseEntity<BalanceResponse>> getClientBalances(String idAccount);
-    Mono<ResponseEntity<Flux<TransactionResponse>>> getClientTransactions(String idAccount);
-    Mono<ResponseEntity<TransactionResponse>> chargeCreditCard(String idAccount, Mono<ChargeRequest> chargeRequestMono);
+    Mono<CreditResponse> createCredit(Mono<CreditRequest> credit);
+    Mono<Void> deleteCredit(String id);
+    Flux<CreditResponse> getAllCredits();
+    Mono<CreditResponse> getCreditById(String id);
+    Mono<CreditResponse> updateCredit(String id, Mono<CreditRequest> credit);
+    Mono<TransactionResponse> makePayment(String idAccount, Mono<PaymentRequest> transactionRequest);
+    Mono<BalanceResponse> getClientBalances(String idAccount);
+    Flux<TransactionResponse> getClientTransactions(String idAccount);
+    Mono<TransactionResponse> chargeCreditCard(String idAccount, Mono<ChargeRequest> chargeRequestMono);
 }

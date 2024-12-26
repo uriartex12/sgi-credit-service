@@ -41,7 +41,6 @@ public interface CreditMapper {
     @Mapping(target = "balance", source = "balance")
     BalanceResponse balance (Credit credit);
 
-
     default OffsetDateTime map(Instant instant) {
         return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }

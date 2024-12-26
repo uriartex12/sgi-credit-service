@@ -1,12 +1,15 @@
 package com.sgi.credit_back.infrastructure.feign;
 
 import com.sgi.credit_back.domain.ports.out.FeignExternalService;
+import com.sgi.credit_back.domain.shared.CustomError;
+import com.sgi.credit_back.infrastructure.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import static com.sgi.credit_back.domain.shared.Constants.*;
 
 @Service
 @Slf4j
@@ -24,23 +27,27 @@ public class FeignExternalServiceImpl implements FeignExternalService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(responseType)
-                .doOnNext(response -> log.info("Request to {} succeeded: {}", url, response))
+                .doOnNext(response -> logSuccess(url, response))
                 .onErrorResume(ex -> {
-                    log.error("Error during request to {}", url, ex);
-                    return Mono.error(new Exception("Error processing request", ex));
+                    log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
+                    return Mono.error(new CustomException(CustomError.E_OPERATION_FAILED));
                 });
     }
 
-    public <R> Flux<R> get(String url, String productId, Class<R> responseType) {
+    public <R> Flux<R> get(String url, String pathVariable, Class<R> responseType) {
         return webClient.get()
-                .uri(url, productId)
+                .uri(url, pathVariable)
                 .retrieve()
                 .bodyToFlux(responseType)
-                .doOnNext(response -> log.info("Request to {} succeeded: {}", url, response))
+                .doOnNext(response -> logSuccess(url, response))
                 .onErrorResume(ex -> {
-                    log.error("Error during request to {}", url, ex);
-                    return Mono.error(new Exception("Error processing request", ex));
+                    log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
+                    return Mono.error(new CustomException(CustomError.E_OPERATION_FAILED));
                 });
+    }
+
+    private <R> void logSuccess(String url, R response) {
+        log.info(EXTERNAL_REQUEST_SUCCESS_FORMAT, url, response);
     }
 
 }
