@@ -34,6 +34,7 @@
 		<map-struct.version>1.5.5.Final</map-struct.version>
 		<jackson-nullable.version>0.2.6</jackson-nullable.version>
 		<springdoc-openapi.version>2.2.0</springdoc-openapi.version>
+		<checkstyle-maven-plugin.version>3.7.0</checkstyle-maven-plugin.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -126,6 +127,29 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${checkstyle-maven-plugin.version}</version>
+				<configuration>
+					<configLocation>checkstyle.xml</configLocation>
+					<encoding>UTF-8</encoding>
+					<consoleOutput>true</consoleOutput>
+					<linkXRef>false</linkXRef>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<logViolationsToConsole>true</logViolationsToConsole>
+					<violationSeverity>warning</violationSeverity>
+				</configuration>
+				<executions>
+					<execution>
+						<id>validate</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.openapitools</groupId>
