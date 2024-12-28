@@ -45,6 +45,7 @@ public class FeignExternalServiceImpl implements FeignExternalService {
      * @param <R> Tipo de la respuesta.
      * @return Mono que encapsula la respuesta.
      */
+    @Override
     public <T, R> Mono<R> post(String url, T requestBody, Class<R> responseType) {
         return webClient.post()
                 .uri(url)
@@ -67,14 +68,15 @@ public class FeignExternalServiceImpl implements FeignExternalService {
      * @param <R> Tipo de la respuesta.
      * @return Flux que encapsula la respuesta.
      */
+    @Override
     public <R> Flux<R> get(String url, String pathVariable, Class<R> responseType) {
         return webClient.get()
                 .uri(url, pathVariable)
                 .retrieve()
                 .bodyToFlux(responseType)
-                .doOnNext(response -> logSuccess(url, response))
+                    .doOnNext(response -> logSuccess(url, response))
                 .onErrorResume(ex -> {
-                    log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
+                        log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
                     return Mono.error(new CustomException(CustomError.E_OPERATION_FAILED));
                 });
     }
