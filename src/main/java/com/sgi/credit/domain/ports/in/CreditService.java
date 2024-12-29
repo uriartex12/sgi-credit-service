@@ -34,4 +34,6 @@ public interface CreditService {
     Flux<TransactionResponse> getClientTransactions(String creditId);
 
     Mono<TransactionResponse> chargeCreditCard(String idCredit, Mono<ChargeRequest> chargeRequestMono);
+
+    Flux<CreditResponse> getCreditCardByClientId(String clientId);
 }

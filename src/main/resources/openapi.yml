@@ -283,6 +283,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /v1/credit/{clientId}/card:
+    get:
+      summary: Get a credit card by clientId
+      operationId: getCreditCardByClientId
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          description: ID of the client whose credit card is being queried
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit card found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreditResponse'
+        '404':
+          description: Credit card not found for the provided clientId
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     CreditRequest:

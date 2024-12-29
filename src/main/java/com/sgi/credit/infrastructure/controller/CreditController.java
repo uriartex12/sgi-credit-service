@@ -66,6 +66,12 @@ public class CreditController implements V1Api {
     }
 
     @Override
+    public Mono<ResponseEntity<Flux<CreditResponse>>> getCreditCardByClientId(String clientId, ServerWebExchange exchange) {
+        return Mono.fromSupplier(() -> ResponseEntity.ok()
+                .body(creditService.getCreditCardByClientId(clientId)));
+    }
+
+    @Override
     public Mono<ResponseEntity<CreditResponse>> updateCredit(
             String creditId, Mono<CreditRequest> creditRequest, ServerWebExchange exchange) {
         return creditService.updateCredit(creditId, creditRequest)

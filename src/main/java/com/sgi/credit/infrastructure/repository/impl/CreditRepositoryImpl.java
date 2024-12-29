@@ -44,4 +44,10 @@ public class CreditRepositoryImpl implements CreditRepository {
     public Mono<Void> delete(Credit credit) {
         return creditRepository.delete(credit);
     }
+
+    @Override
+    public Flux<CreditResponse> getCreditCardByClientId(String clientId) {
+        return creditRepository.findAllByClientId(clientId)
+                .map(CreditMapper.INSTANCE::toCreditResponse);
+    }
 }

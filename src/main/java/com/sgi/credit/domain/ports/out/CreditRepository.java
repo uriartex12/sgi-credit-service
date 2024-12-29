@@ -10,34 +10,13 @@ import reactor.core.publisher.Mono;
  */
 public interface CreditRepository {
 
-    /**
-     * Saves a credit in the repository.
-     *
-     * @param credit the credit information to save
-     * @return a Mono containing the saved credit response
-     */
     Mono<CreditResponse> save(Credit credit);
 
-    /**
-     * Finds a credit by its ID.
-     *
-     * @param id the unique identifier of the credit
-     * @return a Mono containing the found credit or empty if not found
-     */
     Mono<Credit> findById(String id);
 
-    /**
-     * Retrieves all available credits.
-     *
-     * @return a Flux containing all credit responses
-     */
     Flux<CreditResponse> findAll();
 
-    /**
-     * Deletes a credit from the repository.
-     *
-     * @param credit the credit information to delete
-     * @return a Mono representing the deletion operation
-     */
     Mono<Void> delete(Credit credit);
+
+    Flux<CreditResponse> getCreditCardByClientId(String  clientId);
 }

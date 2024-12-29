@@ -138,6 +138,11 @@ public class CreditServiceImpl implements CreditService {
                         }));
     }
 
+    @Override
+    public Flux<CreditResponse> getCreditCardByClientId(String clientId) {
+        return creditRepository.getCreditCardByClientId(clientId);
+    }
+
     private Predicate<ChargeRequest> isNotCreditLimitExceeded(Credit credit) {
         return charge -> charge.getAmount().compareTo(credit.getCreditLimit().subtract(credit.getConsumptionAmount())) <= 0;
     }
