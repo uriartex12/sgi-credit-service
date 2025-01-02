@@ -5,6 +5,8 @@ import com.sgi.credit.domain.shared.CustomError;
 import com.sgi.credit.infrastructure.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
@@ -14,37 +16,23 @@ import static com.sgi.credit.domain.shared.Constants.EXTERNAL_REQUEST_ERROR_FORM
 import static com.sgi.credit.domain.shared.Constants.EXTERNAL_REQUEST_SUCCESS_FORMAT;
 
 /**
- * Implementación del servicio externo Feign para realizar solicitudes HTTP.
- * Utiliza WebClient para hacer solicitudes reactivas a un servicio externo.
+ * Implementation of the external Feign service to make HTTP requests.
+ * Uses WebClient to make reactive requests to an external service.
  */
 @Service
 @Slf4j
 public class FeignExternalServiceImpl implements FeignExternalService {
 
     private final WebClient webClient;
+    private final ReactiveCircuitBreaker circuitBreaker;
 
-    /**
-     * Constructor de FeignExternalServiceImpl.
-     * Inicializa el WebClient con la URL del servicio de transacciones.
-     *
-     * @param webClientBuilder Builder de WebClient.
-     * @param transactionServiceUrl URL del servicio de transacciones.
-     */
     public FeignExternalServiceImpl(WebClient.Builder webClientBuilder,
-                                    @Value("${feign.client.config.transaction-service.url}") String transactionServiceUrl) {
+                                    @Value("${feign.client.config.transaction-service.url}") String transactionServiceUrl,
+                                    ReactiveCircuitBreakerFactory circuitBreakerFactory) {
+        this.circuitBreaker =  circuitBreakerFactory.create("credit-service");
         this.webClient = webClientBuilder.baseUrl(transactionServiceUrl).build();
     }
 
-    /**
-     * Realiza una solicitud POST al servicio externo.
-     *
-     * @param url La URL del servicio.
-     * @param requestBody El cuerpo de la solicitud.
-     * @param responseType El tipo de la respuesta esperada.
-     * @param <T> Tipo del cuerpo de la solicitud.
-     * @param <R> Tipo de la respuesta.
-     * @return Mono que encapsula la respuesta.
-     */
     @Override
     public <T, R> Mono<R> post(String url, T requestBody, Class<R> responseType) {
         return webClient.post()
@@ -53,21 +41,10 @@ public class FeignExternalServiceImpl implements FeignExternalService {
                 .retrieve()
                 .bodyToMono(responseType)
                 .doOnNext(response -> logSuccess(url, response))
-                .onErrorResume(ex -> {
-                    log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
-                    return Mono.error(new CustomException(CustomError.E_OPERATION_FAILED));
-                });
+                .onErrorResume(ex -> Mono.error(new CustomException(CustomError.E_OPERATION_FAILED)))
+                .transformDeferred(circuitBreaker::run);
     }
 
-    /**
-     * Realiza una solicitud GET al servicio externo.
-     *
-     * @param url La URL del servicio.
-     * @param pathVariable El valor de la variable de la URL.
-     * @param responseType El tipo de la respuesta esperada.
-     * @param <R> Tipo de la respuesta.
-     * @return Flux que encapsula la respuesta.
-     */
     @Override
     public <R> Flux<R> get(String url, String pathVariable, Class<R> responseType) {
         return webClient.get()
@@ -75,13 +52,16 @@ public class FeignExternalServiceImpl implements FeignExternalService {
                 .retrieve()
                 .bodyToFlux(responseType)
                     .doOnNext(response -> logSuccess(url, response))
-                .onErrorResume(ex -> {
-                        log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
-                    return Mono.error(new CustomException(CustomError.E_OPERATION_FAILED));
-                });
+                .doOnError(ex -> logError(url, ex))
+                .onErrorResume(ex -> Mono.error(new CustomException(CustomError.E_OPERATION_FAILED)))
+                .transformDeferred(circuitBreaker::run);
     }
 
     private <R> void logSuccess(String url, R response) {
         log.info(EXTERNAL_REQUEST_SUCCESS_FORMAT, url, response);
+    }
+
+    private void logError(String url, Throwable ex) {
+        log.error(EXTERNAL_REQUEST_ERROR_FORMAT, url, ex);
     }
 }

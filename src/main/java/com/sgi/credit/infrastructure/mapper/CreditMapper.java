@@ -14,32 +14,26 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**
- * Mapper para la conversión entre objetos Credit y otros DTOs como CreditRequest, CreditResponse y BalanceResponse.
- * Utiliza MapStruct para automatizar la conversión de tipos entre objetos.
+ * Mapper for converting between Credit objects and other DTOs such as CreditRequest, CreditResponse, and BalanceResponse.
+ * Uses MapStruct to automate the type conversion between objects.
  */
 @Mapper
 public interface CreditMapper {
 
-    /**
-     * Instancia del mapper.
-     */
     CreditMapper INSTANCE = Mappers.getMapper(CreditMapper.class);
 
-    /**
-     * Convierte un objeto Credit a CreditResponse.
-     *
-     * @param credit El objeto Credit.
-     * @return El objeto CreditResponse.
-     */
     @Mapping(target = "type", source = "type")
     CreditResponse toCreditResponse(Credit credit);
 
     /**
-     * Convierte un objeto CreditRequest a Credit, ignorando el campo id.
+     * Converts a CreditRequest to a Credit object.
+     * This method also sets the credit number based on the provided account number
+     * and initializes default values for the consumption amount, created date,
+     * and updated date.
      *
-     * @param creditRequest El objeto CreditRequest.
-     * @param accountNumber El número de cuenta.
-     * @return El objeto Credit.
+     * @param creditRequest The CreditRequest object containing the details to create the Credit.
+     * @param accountNumber The account number to be assigned to the credit.
+     * @return The Credit object created from the CreditRequest.
      */
     @Mapping(target = "id", ignore = true)
     default Credit toCredit(CreditRequest creditRequest, String accountNumber) {
@@ -56,21 +50,9 @@ public interface CreditMapper {
                 .build();
     }
 
-    /**
-     * Convierte un objeto Credit a BalanceResponse.
-     *
-     * @param credit El objeto Credit.
-     * @return El objeto BalanceResponse.
-     */
     @Mapping(target = "balance", source = "balance")
     BalanceResponse toBalanceResponse(Credit credit);
 
-    /**
-     * Convierte un objeto Instant a OffsetDateTime.
-     *
-     * @param instant El objeto Instant.
-     * @return El objeto OffsetDateTime.
-     */
     default OffsetDateTime map(Instant instant) {
         return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }

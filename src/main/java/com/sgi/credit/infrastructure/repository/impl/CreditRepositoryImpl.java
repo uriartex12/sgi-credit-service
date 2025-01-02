@@ -12,9 +12,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Implementación del repositorio de créditos.
- * Proporciona métodos para guardar, buscar, eliminar y listar créditos de forma reactiva.
- * Utiliza CreditRepositoryJpa para interactuar con la base de datos.
+ * Implementation of the credit repository.
+ * Provides methods to save, find, delete, and list credits reactively.
+ * Uses CreditRepositoryJpa to interact with the database.
  */
 @Slf4j
 @Repository

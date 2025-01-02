@@ -5,8 +5,8 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import reactor.core.publisher.Flux;
 
 /**
- * Repositorio Reactivo para la entidad Credit.
- * Extiende de ReactiveMongoRepository para realizar operaciones CRUD en MongoDB.
+ * Reactive Repository for the Credit entity.
+ * Extends ReactiveMongoRepository to perform CRUD operations in MongoDB.
  */
 public interface CreditRepositoryJpa extends ReactiveMongoRepository<Credit, String> {
 
