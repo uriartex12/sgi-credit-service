@@ -47,8 +47,8 @@ public class CreditServiceImpl implements CreditService {
     @Override
     public Mono<Void> deleteCredit(String id) {
         return creditRepository.findById(id)
-                .flatMap(creditRepository::delete)
-                .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)));
+                .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)))
+                .flatMap(creditRepository::delete);
     }
 
     @Override
