@@ -8,7 +8,7 @@ servers:
     description: Local server
 
 paths:
-  /v1/credit:
+  /v1/credits:
     get:
       summary: Get all credits
       operationId: getAllCredits
@@ -55,7 +55,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}:
+  /v1/credits/{creditId}:
     get:
       summary: Get an credit by ID
       operationId: getCreditById
@@ -151,7 +151,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}/payment:
+  /v1/credits/{creditId}/payment:
     post:
       summary: Make a payment from an credit
       operationId: makePayment
@@ -187,7 +187,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}/charge:
+  /v1/credits/{creditId}/charge:
     post:
       summary: Make a payment from an credit
       operationId: chargeCreditCard
@@ -223,7 +223,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}/balances:
+  /v1/credits/{creditId}/balances:
     get:
       summary: Get client balances
       operationId: getClientBalances
@@ -252,7 +252,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{creditId}/transactions:
+  /v1/credits/{creditId}/transactions:
     get:
       summary: Get client transactions
       operationId: getClientTransactions
@@ -283,7 +283,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/credit/{clientId}/card:
+  /v1/credits/{clientId}/card:
     get:
       summary: Get a credit card by clientId
       operationId: getCreditCardByClientId

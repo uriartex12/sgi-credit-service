@@ -81,7 +81,7 @@ public class CreditServiceImpl implements CreditService {
         return creditRepository.findById(idCredit)
                 .switchIfEmpty(Mono.error(new CustomException(CustomError.E_CREDIT_NOT_FOUND)))
                 .flatMapMany(credit -> webClient.get(
-                        "/v1/{productId}/transaction",
+                        "/v1/transactions/{productId}/card",
                         idCredit,
                         TransactionResponse.class));
     }
@@ -106,7 +106,7 @@ public class CreditServiceImpl implements CreditService {
                             credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
                             return creditRepository.save(credit)
                                     .flatMap(savedAccount -> webClient.post(
-                                            "/v1/transaction",
+                                            "/v1/transactions",
                                             transaction,
                                             TransactionResponse.class));
                         }));
@@ -132,7 +132,7 @@ public class CreditServiceImpl implements CreditService {
                             credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
                             return creditRepository.save(credit)
                                     .flatMap(savedAccount -> webClient.post(
-                                            "/v1/transaction",
+                                            "/v1/transactions",
                                             transaction,
                                             TransactionResponse.class));
                         }));
