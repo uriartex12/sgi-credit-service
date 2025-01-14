@@ -21,7 +21,7 @@ public interface CreditService {
 
     Mono<Void> deleteCredit(String id);
 
-    Flux<CreditResponse> getAllCredits();
+    Flux<CreditResponse> getAllCredits(String creditId, String type, String clientId);
 
     Mono<CreditResponse> getCreditById(String id);
 

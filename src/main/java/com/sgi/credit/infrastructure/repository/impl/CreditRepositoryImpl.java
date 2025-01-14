@@ -11,6 +11,9 @@ import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 /**
  * Implementation of the credit repository.
  * Provides methods to save, find, delete, and list credits reactively.
@@ -35,9 +38,12 @@ public class CreditRepositoryImpl implements CreditRepository {
     }
 
     @Override
-    public Flux<CreditResponse> findAll() {
-        return creditRepository.findAll()
-                .map(CreditMapper.INSTANCE::toCreditResponse);
+    public Flux<CreditResponse> findAll(String creditId, String type, String clientId) {
+        boolean allNull = Stream.of(clientId, type, creditId).allMatch(Objects::isNull);
+        Flux<Credit> resultFlux = allNull
+                ? creditRepository.findAll()
+                : creditRepository.findAllByIdOrTypeOrClientId(creditId, type, clientId);
+        return resultFlux.map(CreditMapper.INSTANCE::toCreditResponse);
     }
 
     @Override

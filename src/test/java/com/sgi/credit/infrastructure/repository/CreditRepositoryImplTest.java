@@ -18,6 +18,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -69,14 +70,15 @@ public class CreditRepositoryImplTest {
     public void testFindAll() {
         Credit credit1 = FactoryTest.toFactoryEntityCredit();
         Credit credit2 = FactoryTest.toFactoryEntityCredit();
-        when(repositoryJpa.findAll()).thenReturn(Flux.just(credit1, credit2));
-        Flux<CreditResponse> result = creditRepository.findAll();
+        when(repositoryJpa.findAllByIdOrTypeOrClientId(anyString(), anyString(), anyString()))
+                .thenReturn(Flux.just(credit1, credit2));
+        Flux<CreditResponse> result = creditRepository.findAll(anyString(), anyString(), anyString());
         result.collectList().subscribe(responses -> {
             assertNotNull(responses);
             assertEquals(2, responses.size());
         });
 
-        verify(repositoryJpa, times(1)).findAll();
+        verify(repositoryJpa, times(1)).findAllByIdOrTypeOrClientId(anyString(), anyString(), anyString());
     }
 
     @Test

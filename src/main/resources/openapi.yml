@@ -12,6 +12,25 @@ paths:
     get:
       summary: Get all credits
       operationId: getAllCredits
+      parameters:
+        - name: clientId
+          in: query
+          required: false
+          description: Id of client
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          description: type
+          schema:
+            type: string
+        - name: creditId
+          in: query
+          required: false
+          description: Id of credit
+          schema:
+            type: string
       responses:
         '200':
           description: List of credits
@@ -337,13 +356,13 @@ components:
     CreditResponse:
       type: object
       properties:
-        _id:
+        id:
           type: string
         creditNumber:
           type: string
         type:
           type: string
-          enum: [ PERSONAL,BUSINESS]
+          enum: [PERSONAL, BUSINESS]
         creditLimit:
           type: decimal
         consumptionAmount:
@@ -409,6 +428,35 @@ components:
           type: string
         balance:
           type: number
+    DebtRequest:
+      type: object
+      properties:
+        cardId:
+          type: string
+        amount:
+          type: decimal
+        status:
+          type: string
+          enum: [ EXPIRED, PAID, ACTIVE ]
+        clientId:
+          type: string
+    DebtResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        creditId:
+          type: string
+        amount:
+          type: decimal
+        status:
+          type: string
+          enum: [ EXPIRED, PAID, ACTIVE ]
+        clientId:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
     ErrorResponse:
       type: object
       required:

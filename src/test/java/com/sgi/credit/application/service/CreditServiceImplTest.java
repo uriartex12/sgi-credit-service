@@ -1,15 +1,18 @@
 package com.sgi.credit.application.service;
 
 import com.sgi.credit.domain.model.Credit;
+import com.sgi.credit.domain.model.Debt;
 import com.sgi.credit.domain.ports.out.CreditRepository;
+import com.sgi.credit.domain.ports.out.DebtRepository;
 import com.sgi.credit.domain.ports.out.FeignExternalService;
 import com.sgi.credit.helper.FactoryTest;
+import com.sgi.credit.infrastructure.dto.ChargeRequest;
 import com.sgi.credit.infrastructure.dto.CreditRequest;
 import com.sgi.credit.infrastructure.dto.CreditResponse;
-import com.sgi.credit.infrastructure.dto.TransactionResponse;
-import com.sgi.credit.infrastructure.dto.TransactionRequest;
 import com.sgi.credit.infrastructure.dto.PaymentRequest;
-import com.sgi.credit.infrastructure.dto.ChargeRequest;
+import com.sgi.credit.infrastructure.dto.DebtResponse;
+import com.sgi.credit.infrastructure.dto.TransactionRequest;
+import com.sgi.credit.infrastructure.dto.TransactionResponse;
 import com.sgi.credit.infrastructure.mapper.CreditMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,12 +53,20 @@ public class CreditServiceImplTest {
     @InjectMocks
     private CreditServiceImpl creditService;
 
+    @Mock
+    private DebtRepository debtRepository;
+
     @Test
     void createCredit_shouldReturnCreatedResponse() {
         CreditRequest creditRequest = FactoryTest.toFactoryBankCredit(CreditRequest.class);
         CreditResponse creditResponse =  FactoryTest.toFactoryBankCredit(CreditResponse.class);
+        DebtResponse debtResponse =  FactoryTest.toFactoryDebt(creditResponse.getId(),
+                creditResponse.getClientId(), creditResponse.getConsumptionAmount());
         when(creditRepository.save(any(Credit.class)))
                 .thenReturn(Mono.just(creditResponse));
+
+        when(debtRepository.save(any(Debt.class)))
+                .thenReturn(Mono.just(debtResponse));
 
         Mono<CreditResponse> result = creditService.createCredit(Mono.just(creditRequest));
         StepVerifier.create(result)
@@ -93,14 +104,15 @@ public class CreditServiceImplTest {
 
     @Test
     void getAllCredits_shouldReturnListCreditResponse() {
+
         List<CreditResponse> credits = FactoryTest.toFactoryListCredits();
-        when(creditRepository.findAll()).thenReturn(Flux.fromIterable(credits));
-        Flux<CreditResponse> result = creditService.getAllCredits();
+        when(creditRepository.findAll(anyString(), anyString(), anyString())).thenReturn(Flux.fromIterable(credits));
+        Flux<CreditResponse> result = creditService.getAllCredits(anyString(), anyString(), anyString());
 
         StepVerifier.create(result)
                 .expectNextCount(2)
                 .verifyComplete();
-        verify(creditRepository).findAll();
+        verify(creditRepository).findAll(anyString(), anyString(), anyString());
     }
 
     @Test

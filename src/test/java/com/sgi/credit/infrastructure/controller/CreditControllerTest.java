@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -49,7 +50,7 @@ public class CreditControllerTest {
         Mockito.when(creditService.createCredit(any(Mono.class)))
                 .thenReturn(Mono.just(creditResponse));
         webTestClient.post()
-                .uri("/v1/credit")
+                .uri("/v1/credits")
                 .bodyValue(FactoryTest.toFactoryBankCredit(CreditRequest.class))
                 .exchange()
                 .expectStatus().isCreated()
@@ -70,7 +71,7 @@ public class CreditControllerTest {
         String creditId = randomUUID().toString();
         Mockito.when(creditService.deleteCredit(creditId)).thenReturn(Mono.empty());
         webTestClient.delete()
-                .uri("/v1/credit/{id}", creditId)
+                .uri("/v1/credits/{id}", creditId)
                 .exchange()
                 .expectStatus()
                 .isOk();
@@ -82,7 +83,7 @@ public class CreditControllerTest {
         Mockito.when(creditService.getCreditById(creditResponse.getId()))
                 .thenReturn(Mono.just(creditResponse));
         webTestClient.get()
-                .uri("/v1/credit/{creditId}", creditResponse.getId())
+                .uri("/v1/credits/{creditId}", creditResponse.getId())
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -97,15 +98,27 @@ public class CreditControllerTest {
 
     @Test
     void getAllCredits_shouldReturnFluxOfCreditResponse() {
+        String clientId = UUID.randomUUID().toString();
+        String type = "DEBIT";
+        String creditId = UUID.randomUUID().toString();
         List<CreditResponse> credits =  FactoryTest.toFactoryListCredits();
         Flux<CreditResponse> creditResponseFlux = Flux.fromIterable(credits);
-        Mockito.when(creditService.getAllCredits()).thenReturn(creditResponseFlux);
+        Mockito.when(creditService.getAllCredits(creditId, type, clientId))
+                .thenReturn(creditResponseFlux);
         webTestClient.get()
-                .uri("/v1/credit")
+                .uri(uriBuilder -> uriBuilder
+                        .path("/v1/credits")
+                        .queryParam("creditId", creditId)
+                        .queryParam("type", type)
+                        .queryParam("clientId", clientId)
+                        .build())
                 .exchange()
                 .expectStatus().isOk()
                 .expectBodyList(CreditResponse.class)
-                .value(list -> assertThat(list).hasSize(2));
+                .value(list -> {
+                    assertThat(list).hasSize(credits.size());
+                    assertThat(list).containsAll(credits);
+                });
     }
 
     @Test
@@ -114,7 +127,7 @@ public class CreditControllerTest {
         BalanceResponse balanceResponse = FactoryTest.toFactoryBalanceClient();
         Mockito.when(creditService.getClientBalances(creditId)).thenReturn(Mono.just(balanceResponse));
         webTestClient.get()
-                .uri("/v1/credit/{creditId}/balances", creditId)
+                .uri("/v1/credits/{creditId}/balances", creditId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
@@ -133,7 +146,7 @@ public class CreditControllerTest {
                 .thenReturn(Mono.just(transactionResponse));
 
         webTestClient.post()
-                .uri("/v1/credit/{creditId}/payment", creditId)
+                .uri("/v1/credits/{creditId}/payment", creditId)
                 .bodyValue(paymentRequest)
                 .exchange()
                 .expectStatus().isOk()
@@ -154,7 +167,7 @@ public class CreditControllerTest {
                 .thenReturn(Mono.just(transactionResponse));
 
         webTestClient.post()
-                .uri("/v1/credit/{creditId}/charge", creditId)
+                .uri("/v1/credits/{creditId}/charge", creditId)
                 .bodyValue(chargeRequest)
                 .exchange()
                 .expectStatus().isOk()
@@ -173,7 +186,7 @@ public class CreditControllerTest {
                 .thenReturn(Flux.fromIterable(transactionResponse));
 
         webTestClient.get()
-                .uri("/v1/credit/{creditId}/transactions", creditId)
+                .uri("/v1/credits/{creditId}/transactions", creditId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
@@ -194,7 +207,7 @@ public class CreditControllerTest {
                 .thenReturn(Mono.just(creditResponse));
 
         webTestClient.put()
-                .uri("/v1/credit/{creditId}", creditId)
+                .uri("/v1/credits/{creditId}", creditId)
                 .bodyValue(creditRequest)
                 .exchange()
                 .expectStatus().isOk()

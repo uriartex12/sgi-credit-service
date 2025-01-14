@@ -14,7 +14,7 @@ public interface CreditRepository {
 
     Mono<Credit> findById(String id);
 
-    Flux<CreditResponse> findAll();
+    Flux<CreditResponse> findAll(String creditId, String type, String clientId);
 
     Mono<Void> delete(Credit credit);
 

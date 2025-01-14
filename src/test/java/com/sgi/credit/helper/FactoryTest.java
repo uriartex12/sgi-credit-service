@@ -2,10 +2,11 @@ package com.sgi.credit.helper;
 
 import com.sgi.credit.domain.model.Credit;
 import com.sgi.credit.infrastructure.dto.BalanceResponse;
-import com.sgi.credit.infrastructure.dto.CreditResponse;
 import com.sgi.credit.infrastructure.dto.CreditRequest;
-import com.sgi.credit.infrastructure.dto.PaymentRequest;
+import com.sgi.credit.infrastructure.dto.CreditResponse;
 import com.sgi.credit.infrastructure.dto.ChargeRequest;
+import com.sgi.credit.infrastructure.dto.DebtResponse;
+import com.sgi.credit.infrastructure.dto.PaymentRequest;
 import com.sgi.credit.infrastructure.dto.TransactionResponse;
 import lombok.SneakyThrows;
 
@@ -55,6 +56,20 @@ public class FactoryTest {
         credit.setType(CreditResponse.TypeEnum.PERSONAL);
         credit.setCreditLimit(BigDecimal.valueOf(1));
         return credit;
+    }
+
+    /**
+     * Generates DebtRequest objects with predefined values for testing purposes.
+     *
+     * @return DebtRequest objects with default data.
+     */
+    public static DebtResponse toFactoryDebt(String cardId, String clientId, BigDecimal amount) {
+        DebtResponse debtResponse = new DebtResponse();
+        debtResponse.setStatus(DebtResponse.StatusEnum.ACTIVE);
+        debtResponse.setCardId(cardId);
+        debtResponse.setClientId(clientId);
+        debtResponse.setAmount(amount);
+        return  debtResponse;
     }
 
     /**
@@ -123,7 +138,7 @@ public class FactoryTest {
      * @param productId the product ID for the transaction.
      * @return a {@link TransactionResponse} instance with predefined values.
      */
-    public static TransactionResponse   toFactoryTransactionResponse(String productId) {
+    public static TransactionResponse toFactoryTransactionResponse(String productId) {
         TransactionResponse transactionResponse = new TransactionResponse();
         transactionResponse.setClientId(randomUUID().toString());
         transactionResponse.setAmount(BigDecimal.valueOf(100));

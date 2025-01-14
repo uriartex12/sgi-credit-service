@@ -39,9 +39,9 @@ public class CreditController implements V1Api {
     }
 
     @Override
-    public Mono<ResponseEntity<Flux<CreditResponse>>> getAllCredits(
-            ServerWebExchange exchange) {
-        return Mono.fromSupplier(() -> ResponseEntity.ok().body(creditService.getAllCredits()));
+    public Mono<ResponseEntity<Flux<CreditResponse>>> getAllCredits(String clientId, String type, String creditId,
+                                                                    ServerWebExchange exchange) {
+        return Mono.fromSupplier(() -> ResponseEntity.ok().body(creditService.getAllCredits(creditId, type, clientId)));
     }
 
     @Override
