@@ -6,11 +6,12 @@ import com.sgi.credit.domain.ports.out.CreditRepository;
 import com.sgi.credit.domain.ports.out.DebtRepository;
 import com.sgi.credit.domain.ports.out.FeignExternalService;
 import com.sgi.credit.helper.FactoryTest;
-import com.sgi.credit.infrastructure.dto.ChargeRequest;
 import com.sgi.credit.infrastructure.dto.CreditRequest;
 import com.sgi.credit.infrastructure.dto.CreditResponse;
-import com.sgi.credit.infrastructure.dto.PaymentRequest;
+import com.sgi.credit.infrastructure.dto.DebtRequest;
 import com.sgi.credit.infrastructure.dto.DebtResponse;
+import com.sgi.credit.infrastructure.dto.ChargeRequest;
+import com.sgi.credit.infrastructure.dto.PaymentRequest;
 import com.sgi.credit.infrastructure.dto.TransactionRequest;
 import com.sgi.credit.infrastructure.dto.TransactionResponse;
 import com.sgi.credit.infrastructure.mapper.CreditMapper;
@@ -60,8 +61,14 @@ public class CreditServiceImplTest {
     void createCredit_shouldReturnCreatedResponse() {
         CreditRequest creditRequest = FactoryTest.toFactoryBankCredit(CreditRequest.class);
         CreditResponse creditResponse =  FactoryTest.toFactoryBankCredit(CreditResponse.class);
-        DebtResponse debtResponse =  FactoryTest.toFactoryDebt(creditResponse.getId(),
+        DebtResponse debtResponse =  FactoryTest.toFactoryDebtResponse(creditResponse.getId(),
                 creditResponse.getClientId(), creditResponse.getConsumptionAmount());
+        Debt debt = FactoryTest.toFactoryDebtModel(creditResponse.getId(),
+                creditResponse.getClientId(), creditResponse.getConsumptionAmount(),
+                DebtRequest.StatusEnum.ACTIVE.name());
+        when(debtRepository.findByClientIdAndStatus(creditResponse.getClientId(),
+                DebtRequest.StatusEnum.ACTIVE.name())).thenReturn(Mono.just(debt));
+
         when(creditRepository.save(any(Credit.class)))
                 .thenReturn(Mono.just(creditResponse));
 
@@ -174,12 +181,21 @@ public class CreditServiceImplTest {
         credit.setCreditLimit(BigDecimal.valueOf(200));
         TransactionResponse transactionResponse = FactoryTest.toFactoryTransactionResponse(credit.getId());
         transactionResponse.setClientId(credit.getClientId());
+        DebtResponse debtResponse =  FactoryTest.toFactoryDebtResponse(credit.getId(),
+                credit.getClientId(), credit.getConsumptionAmount());
         PaymentRequest paymentRequest = FactoryTest.toFactoryPaymentRequest();
+        Debt debt = FactoryTest.toFactoryDebtModel(credit.getId(), credit.getClientId(),
+                credit.getConsumptionAmount(), DebtRequest.StatusEnum.ACTIVE.name());
+
+        when(debtRepository.findByClientIdAndStatus(credit.getClientId(),
+                DebtRequest.StatusEnum.ACTIVE.name())).thenReturn(Mono.just(debt));
         when(creditRepository.findById(credit.getId())).thenReturn(Mono.just(credit));
         when(creditRepository.save(any(Credit.class))).thenReturn(Mono.just(CreditMapper.INSTANCE.toCreditResponse(credit)));
         when(feignExternalService.post(anyString(), any(TransactionRequest.class), eq(TransactionResponse.class)))
                 .thenReturn(Mono.just(transactionResponse));
 
+        when(debtRepository.save(any(Debt.class)))
+                .thenReturn(Mono.just(debtResponse));
         Mono<TransactionResponse> result = creditService.makePayment(credit.getId(), Mono.just(paymentRequest));
 
         StepVerifier.create(result)
@@ -198,6 +214,17 @@ public class CreditServiceImplTest {
         TransactionResponse transactionResponse = FactoryTest.toFactoryTransactionResponse(credit.getId());
         transactionResponse.setClientId(credit.getClientId());
         ChargeRequest chargeRequest = FactoryTest.toFactoryChargeRequest();
+        DebtResponse debtResponse =  FactoryTest.toFactoryDebtResponse(credit.getId(),
+                credit.getClientId(), credit.getConsumptionAmount());
+        Debt debt = FactoryTest.toFactoryDebtModel(credit.getId(),
+                credit.getClientId(), credit.getConsumptionAmount(),
+                DebtRequest.StatusEnum.ACTIVE.name());
+
+
+        when(debtRepository.findByClientIdAndStatus(credit.getClientId(),
+                DebtRequest.StatusEnum.ACTIVE.name())).thenReturn(Mono.just(debt));
+        when(debtRepository.save(any(Debt.class)))
+                .thenReturn(Mono.just(debtResponse));
         when(creditRepository.findById(credit.getId())).thenReturn(Mono.just(credit));
         when(creditRepository.save(any(Credit.class))).thenReturn(Mono.just(CreditMapper.INSTANCE.toCreditResponse(credit)));
         when(feignExternalService.post(anyString(), any(TransactionRequest.class), eq(TransactionResponse.class)))
@@ -208,6 +235,8 @@ public class CreditServiceImplTest {
         StepVerifier.create(result)
                 .expectNext(transactionResponse)
                 .verifyComplete();
+
+
         verify(creditRepository).findById(credit.getId());
         verify(creditRepository).save(any(Credit.class));
         verify(feignExternalService).post(anyString(), any(TransactionRequest.class), eq(TransactionResponse.class));

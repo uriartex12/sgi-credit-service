@@ -29,7 +29,7 @@ public class DebtServiceImpl implements DebtService {
 
     @Override
     public Mono<DebtResponse> hasOverdueDebt(String clientId) {
-        return debtRepository.findByCreditIdAndStatus(clientId, DebtRequest.StatusEnum.EXPIRED.name())
+        return debtRepository.findByClientIdAndStatus(clientId, DebtRequest.StatusEnum.EXPIRED.name())
                 .map(DebtMapper.INSTANCE::toDebtResponse);
     }
 }

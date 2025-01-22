@@ -73,7 +73,7 @@ public class CreditServiceImpl implements CreditService {
      * @return A Mono emitting true if the debt is overdue, false otherwise.
      */
     public Mono<Boolean> hasOverdueDebt(String clientId) {
-        return debtRepository.findByCreditIdAndStatus(clientId, DebtRequest.StatusEnum.EXPIRED.name())
+        return debtRepository.findByClientIdAndStatus(clientId, DebtRequest.StatusEnum.ACTIVE.name())
                 .map(debt -> {
                     LocalDate dueDate = debt.getDueDate().atZone(ZoneId.systemDefault()).toLocalDate();
                     return dueDate.isBefore(LocalDate.now().withDayOfMonth(1));
@@ -136,7 +136,7 @@ public class CreditServiceImpl implements CreditService {
                                 .flatMap(payment -> {
                                     BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount()
                                             .subtract(payment.getAmount());
-                                    return debtRepository.findByCreditIdAndStatus(credit.getClientId(),
+                                    return debtRepository.findByClientIdAndStatus(credit.getClientId(),
                                                     DebtRequest.StatusEnum.ACTIVE.name())
                                             .flatMap(debt -> {
                                                 debt.setAmount(updatedConsumptionAmount);
@@ -188,18 +188,29 @@ public class CreditServiceImpl implements CreditService {
                         .switchIfEmpty(Mono.error(new CustomException(CustomError.E_INSUFFICIENT_BALANCE)))
                         .flatMap(charge -> {
                             BigDecimal updatedConsumptionAmount = credit.getConsumptionAmount().add(charge.getAmount());
-                            transaction.setProductId(idCredit);
-                            transaction.setClientId(credit.getClientId());
-                            transaction.setType(TransactionRequest.TypeEnum.CHARGE);
-                            transaction.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount).doubleValue());
-                            transaction.setAmount(charge.getAmount().doubleValue());
-                            credit.setConsumptionAmount(updatedConsumptionAmount);
-                            credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
-                            return creditRepository.save(credit)
-                                    .flatMap(savedAccount -> webClient.post(
-                                            "/v1/transactions",
-                                            transaction,
-                                            TransactionResponse.class));
+                            return debtRepository.findByClientIdAndStatus(credit.getClientId(),
+                                            DebtRequest.StatusEnum.ACTIVE.name())
+                                    .flatMap(debt -> {
+                                        debt.setAmount(updatedConsumptionAmount);
+                                        return debtRepository.save(debt);
+                                    })
+                                    .then(Mono.defer(() -> {
+                                        transaction.setProductId(idCredit);
+                                        transaction.setClientId(credit.getClientId());
+                                        transaction.setType(TransactionRequest.TypeEnum.CHARGE);
+                                        transaction.setBalance(credit.getCreditLimit()
+                                                .subtract(updatedConsumptionAmount).doubleValue());
+                                        transaction.setAmount(charge.getAmount().doubleValue());
+                                        credit.setConsumptionAmount(updatedConsumptionAmount);
+                                        credit.setBalance(credit.getCreditLimit().subtract(updatedConsumptionAmount));
+                                        return creditRepository.save(credit)
+                                                .flatMap(savedAccount -> webClient.post(
+                                                        "/v1/transactions",
+                                                        transaction,
+                                                        TransactionResponse.class));
+                                            }));
+
+
                         }));
     }
 

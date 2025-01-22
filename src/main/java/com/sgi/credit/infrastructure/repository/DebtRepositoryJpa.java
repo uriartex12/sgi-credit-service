@@ -15,5 +15,5 @@ public interface DebtRepositoryJpa extends ReactiveMongoRepository<Debt, String>
 
     Flux<Debt> findAllByClientId(String clientId);
 
-    Mono<Debt> findByCreditIdAndStatus(String creditId, String status);
+    Mono<Debt> findByClientIdAndStatus(String clientId, String status);
 }

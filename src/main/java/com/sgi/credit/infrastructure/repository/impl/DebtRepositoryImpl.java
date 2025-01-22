@@ -40,9 +40,8 @@ public class DebtRepositoryImpl implements DebtRepository {
     }
 
     @Override
-    public Mono<Debt> findByCreditIdAndStatus(String creditId, String status) {
-        return repositoryJpa.findByCreditIdAndStatus(creditId, status);
+    public Mono<Debt> findByClientIdAndStatus(String clientId, String status) {
+        return repositoryJpa.findByClientIdAndStatus(clientId, status);
     }
-
 
 }

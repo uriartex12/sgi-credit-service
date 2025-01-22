@@ -412,6 +412,8 @@ components:
         - clientId
         - productId
       properties:
+        id:
+          type: string
         productId:
           type: string
         type:
@@ -421,6 +423,9 @@ components:
           type: number
         clientId:
           type: string
+        createdDate:
+          type: string
+          format: date-time
     BalanceResponse:
       type: object
       properties:

@@ -1,6 +1,7 @@
 package com.sgi.credit.helper;
 
 import com.sgi.credit.domain.model.Credit;
+import com.sgi.credit.domain.model.Debt;
 import com.sgi.credit.infrastructure.dto.BalanceResponse;
 import com.sgi.credit.infrastructure.dto.CreditRequest;
 import com.sgi.credit.infrastructure.dto.CreditResponse;
@@ -63,13 +64,29 @@ public class FactoryTest {
      *
      * @return DebtRequest objects with default data.
      */
-    public static DebtResponse toFactoryDebt(String cardId, String clientId, BigDecimal amount) {
+    public static DebtResponse toFactoryDebtResponse(String creditId, String clientId, BigDecimal amount) {
         DebtResponse debtResponse = new DebtResponse();
         debtResponse.setStatus(DebtResponse.StatusEnum.ACTIVE);
-        debtResponse.setCardId(cardId);
+        debtResponse.setCreditId(creditId);
         debtResponse.setClientId(clientId);
         debtResponse.setAmount(amount);
         return  debtResponse;
+    }
+
+    /**
+     * Generates Debt objects with predefined values for testing purposes.
+     *
+     * @return Debt objects with default data.
+     */
+    public static Debt toFactoryDebtModel(String creditId, String clientId, BigDecimal amount, String status) {
+        Debt debt = new Debt();
+        debt.setId(UUID.randomUUID().toString());
+        debt.setDueDate(Instant.now().plusNanos(1));
+        debt.setStatus(status);
+        debt.setCreditId(creditId);
+        debt.setClientId(clientId);
+        debt.setAmount(amount);
+        return debt;
     }
 
     /**

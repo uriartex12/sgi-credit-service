@@ -16,5 +16,5 @@ public interface DebtRepository {
 
     Mono<DebtResponse> findByCreditId(String creditId);
 
-    Mono<Debt> findByCreditIdAndStatus(String creditId, String status);
+    Mono<Debt> findByClientIdAndStatus(String clientId, String status);
 }

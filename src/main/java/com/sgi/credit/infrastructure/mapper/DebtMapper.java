@@ -29,7 +29,7 @@ public interface DebtMapper {
 
     @Mapping(target = "creditId", source = "creditResponse.id")
     @Mapping(target = "amount", source = "creditResponse.consumptionAmount")
-    @Mapping(target = "dueDate", expression = "java(java.time.LocalDate.now())")
+    @Mapping(target = "dueDate", expression = "java(java.time.Instant.now())")
     Debt toDebtRequest(CreditResponse creditResponse, String status);
 
     Debt convertDebtResponseToDebt(Mono<DebtResponse> debtResponse);
